@@ -9,6 +9,12 @@ public class PlayerController : MonoBehaviour
     private float VerticalRotation;
     private Vector2 MouseInput;
 
+    public float MoveSpeed = 5f;
+
+    private Vector3 MoveDirection,Movement;
+
+    public CharacterController Charcon;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -26,6 +32,12 @@ public class PlayerController : MonoBehaviour
         VerticalRotation = Mathf.Clamp(VerticalRotation, -60f, 60f);
 
         ViewPoint.rotation = Quaternion.Euler(-VerticalRotation, ViewPoint.rotation.eulerAngles.y, ViewPoint.rotation.eulerAngles.z);
+
+        MoveDirection = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
+
+        Movement = ((transform.forward * MoveDirection.z) + (transform.right * MoveDirection.x)).normalized;
+
+        Charcon.Move(Movement * MoveSpeed * Time.deltaTime);
 
     }
 }
