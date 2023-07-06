@@ -4,7 +4,14 @@ using UnityEngine;
 
 public class Testing : MonoBehaviour
 {
+    public static Testing instance;
+
+    private void Awake()
+    {
+        instance = this;
+    }
     [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] public int Health;
 
     private void Update()
     {
