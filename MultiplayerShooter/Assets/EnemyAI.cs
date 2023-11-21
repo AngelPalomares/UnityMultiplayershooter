@@ -20,6 +20,11 @@ public class EnemyAI : MonoBehaviour
     private bool isShooting = false;
     private float shootingTimer = 0f;
 
+    private void Start()
+    {
+        player = GameObject.Find("Player").GetComponent<Transform>();
+    }
+
     private void Update()
     {
         if (player == null)

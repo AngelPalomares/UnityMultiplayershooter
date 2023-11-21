@@ -17,6 +17,7 @@ public class PlayerController : MonoBehaviour
 
     public KeyCode Runningcode = KeyCode.LeftShift;
     public KeyCode JumpingButton = KeyCode.Space;
+    
 
     private Vector3 MoveDirection,Movement;
 
@@ -28,9 +29,17 @@ public class PlayerController : MonoBehaviour
     private bool isgrounded;
     public LayerMask GroundLayers;
 
-    
+    public GameObject Bulletimpact;
+    public Transform LocationToShoot;
+
+    public float TimeBetweeenShots = .1f;
+    private float ShotCounter;
 
     private Camera Cam;
+
+    public float MaxHeat = 10f, heatpershot = 1f, coolrate = 4f, overheatcoolrate = 5f;
+    private float HeatCounter;
+    private bool OverHeated;
 
     // Start is called before the first frame update
     void Start()
@@ -85,6 +94,45 @@ public class PlayerController : MonoBehaviour
 
         Charcon.Move(Movement * Time.deltaTime);
 
+        if (!OverHeated)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                ShootingMechanic();
+            }
+
+
+            if (Input.GetMouseButton(0))
+            {
+                ShotCounter -= Time.deltaTime;
+
+                if (ShotCounter <= 0)
+                {
+                    ShootingMechanic();
+                }
+
+            }
+            HeatCounter -= coolrate * Time.deltaTime;
+            UICanvasScript.instance.Overheatimage.fillAmount = (float)HeatCounter / (float)MaxHeat;
+        }
+        else
+        {
+            HeatCounter -= overheatcoolrate * Time.deltaTime;
+            UICanvasScript.instance.Overheatimage.fillAmount = (float)HeatCounter / (float)MaxHeat;
+            if (HeatCounter <= 0)
+            {
+                OverHeated = false;
+                UICanvasScript.instance.Overheat.text = " ";
+            }
+        }
+
+        if(HeatCounter < 0)
+        {
+            HeatCounter = 0;
+        }
+
+
+
     }
 
     private void LateUpdate()
@@ -92,4 +140,33 @@ public class PlayerController : MonoBehaviour
         Cam.transform.position = ViewPoint.position;
         Cam.transform.rotation = ViewPoint.rotation;
     }
+
+    public void ShootingMechanic()
+    {
+        Ray ray = Cam.ViewportPointToRay(new Vector3(.5f, .5f, 0f));
+        ray.origin = Cam.transform.position;
+
+        if(Physics.Raycast(ray,out RaycastHit hit))
+        {
+            GameObject BulletImpactObject = Instantiate(Bulletimpact, hit.point + (hit.normal) * 0.002f, Quaternion.LookRotation(hit.normal, Vector3.up));
+
+            Destroy(BulletImpactObject, 5f); ;
+        }
+
+        ShotCounter = TimeBetweeenShots;
+
+        HeatCounter += heatpershot;
+
+        UICanvasScript.instance.Overheatimage.fillAmount = (float)HeatCounter / (float)MaxHeat;
+
+        if (HeatCounter >= MaxHeat)
+        {
+            HeatCounter = MaxHeat;
+
+            OverHeated = true;
+            UICanvasScript.instance.Overheat.text = "Weapon Overheated";
+
+        }
+    }
+
 }
