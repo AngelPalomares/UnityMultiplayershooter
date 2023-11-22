@@ -56,6 +56,10 @@ public class PlayerController : MonoBehaviour
         Cam = Camera.main;
 
         SwitchGun();
+
+        Transform newtrans = SpawnManager.instance.GetSpawnPoint();
+        transform.position = newtrans.position;
+        transform.rotation = newtrans.rotation;
     }
 
     // Update is called once per frame
@@ -105,6 +109,8 @@ public class PlayerController : MonoBehaviour
         LockTheCursortothemiddle();
 
         Changetheweapons();
+
+        ChangeGunWithnumbers();
 
         if (Guns[SelectedGun].GunEffect.activeInHierarchy)
         {
@@ -229,6 +235,26 @@ public class PlayerController : MonoBehaviour
                 SelectedGun = Guns.Length - 1;
             }
 
+            SwitchGun();
+        }
+
+    }
+
+    public void ChangeGunWithnumbers()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            SelectedGun = 0;
+            SwitchGun();
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            SelectedGun = 1;
+            SwitchGun();
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            SelectedGun = 2;
             SwitchGun();
         }
     }
