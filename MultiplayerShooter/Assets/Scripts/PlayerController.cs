@@ -32,14 +32,20 @@ public class PlayerController : MonoBehaviour
     public GameObject Bulletimpact;
     public Transform LocationToShoot;
 
-    public float TimeBetweeenShots = .1f;
+    //public float TimeBetweeenShots = .1f;
     private float ShotCounter;
 
     private Camera Cam;
 
-    public float MaxHeat = 10f, heatpershot = 1f, coolrate = 4f, overheatcoolrate = 5f;
+    public float MaxHeat = 10f, /*heatpershot = 1f,*/ coolrate = 4f, overheatcoolrate = 5f;
     private float HeatCounter;
     private bool OverHeated;
+
+    public Gun[] Guns;
+    private int SelectedGun;
+
+    public float MuzzleDisplayTime;
+    private float MuzzleCounter;
 
     // Start is called before the first frame update
     void Start()
@@ -48,6 +54,8 @@ public class PlayerController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
 
         Cam = Camera.main;
+
+        SwitchGun();
     }
 
     // Update is called once per frame
@@ -94,6 +102,21 @@ public class PlayerController : MonoBehaviour
 
         Charcon.Move(Movement * Time.deltaTime);
 
+        LockTheCursortothemiddle();
+
+        Changetheweapons();
+
+        if (Guns[SelectedGun].GunEffect.activeInHierarchy)
+        {
+            MuzzleCounter -= Time.deltaTime;
+            if (MuzzleCounter <= 0)
+            {
+
+                Guns[SelectedGun].GunEffect.SetActive(false);
+            }
+        }
+
+
         if (!OverHeated)
         {
             if (Input.GetMouseButtonDown(0))
@@ -102,7 +125,7 @@ public class PlayerController : MonoBehaviour
             }
 
 
-            if (Input.GetMouseButton(0))
+            if (Input.GetMouseButton(0) && Guns[SelectedGun].isAutomatic)
             {
                 ShotCounter -= Time.deltaTime;
 
@@ -153,9 +176,9 @@ public class PlayerController : MonoBehaviour
             Destroy(BulletImpactObject, 5f); ;
         }
 
-        ShotCounter = TimeBetweeenShots;
+        ShotCounter = Guns[SelectedGun].timeBetweenShots;
 
-        HeatCounter += heatpershot;
+        HeatCounter += Guns[SelectedGun].heatpershot;
 
         UICanvasScript.instance.Overheatimage.fillAmount = (float)HeatCounter / (float)MaxHeat;
 
@@ -167,6 +190,58 @@ public class PlayerController : MonoBehaviour
             UICanvasScript.instance.Overheat.text = "Weapon Overheated";
 
         }
+
+        Guns[SelectedGun].GunEffect.SetActive(true);
+        MuzzleCounter = MuzzleDisplayTime;
+    }
+
+    public void LockTheCursortothemiddle()
+    {
+        if(Input.GetKeyDown(KeyCode.Escape))
+        {
+            Cursor.lockState = CursorLockMode.None;
+        }else if(Input.GetMouseButtonDown(0))
+            {
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+    }
+
+    public void Changetheweapons()
+    {
+        if (Input.GetAxisRaw("Mouse ScrollWheel") > 0f)
+        {
+            SelectedGun++;
+
+            if (SelectedGun >= Guns.Length)
+            {
+                SelectedGun = 0;
+            }
+
+            SwitchGun();
+
+        }
+        else if (Input.GetAxisRaw("Mouse ScrollWheel") < 0f)
+        {
+            SelectedGun--;
+
+            if(SelectedGun < 0)
+            {
+                SelectedGun = Guns.Length - 1;
+            }
+
+            SwitchGun();
+        }
+    }
+
+    public void SwitchGun()
+    {
+        foreach( Gun gun in Guns)
+        {
+            gun.gameObject.SetActive(false);
+        }
+
+        Guns[SelectedGun].GunEffect.SetActive(false);
+        Guns[SelectedGun].gameObject.SetActive(true);
     }
 
 }
