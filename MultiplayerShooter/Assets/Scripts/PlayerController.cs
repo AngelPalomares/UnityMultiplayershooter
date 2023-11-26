@@ -139,21 +139,15 @@ public class PlayerController : MonoBehaviourPunCallbacks
 
             ChangeGunWithnumbers();
 
-            /*
-
             if (Guns[SelectedGun].GunEffect.activeInHierarchy)
             {
                 MuzzleCounter -= Time.deltaTime;
                 if (MuzzleCounter <= 0)
                 {
+                    Guns[SelectedGun].GunEffect.SetActive(false);
                     photonView.RPC("DeactivatetheMuzzles", RpcTarget.All);
-                    //Guns[SelectedGun].GunEffect.SetActive(false);
                 }
             }
-            */
-
-            photonView.RPC("DeactivateMuzzelTimer", RpcTarget.All);
-
 
             if (!OverHeated)
             {
@@ -192,7 +186,7 @@ public class PlayerController : MonoBehaviourPunCallbacks
                 HeatCounter = 0;
             }
 
-            Anim.SetBool("gronded", isgrounded);
+            Anim.SetBool("grounded", isgrounded);
             Anim.SetFloat("speed", MoveDirection.magnitude);
         }
     }
@@ -225,9 +219,10 @@ public class PlayerController : MonoBehaviourPunCallbacks
                 }
                 else
                 {
-                    GameObject BulletImpactObject = Instantiate(Bulletimpact, hit.point + (hit.normal) * 0.002f, Quaternion.LookRotation(hit.normal, Vector3.up));
+                    PhotonNetwork.Instantiate(Bulletimpact.name, hit.point + (hit.normal) * 0.002f, Quaternion.LookRotation(hit.normal, Vector3.up));
+                    //GameObject BulletImpactObject = Instantiate(Bulletimpact, hit.point + (hit.normal) * 0.002f, Quaternion.LookRotation(hit.normal, Vector3.up));
 
-                    Destroy(BulletImpactObject, 5f); ;
+                    //Destroy(BulletImpactObject, 5f); ;
                 }
             }
 
@@ -370,19 +365,6 @@ public class PlayerController : MonoBehaviourPunCallbacks
         Guns[SelectedGun].GunEffect.SetActive(false);
     }
 
-    [PunRPC]
-    public void DeactivateMuzzelTimer()
-    {
-        if (Guns[SelectedGun].GunEffect.activeInHierarchy)
-        {
-            MuzzleCounter -= Time.deltaTime;
-            if (MuzzleCounter <= 0)
-            {
-                photonView.RPC("DeactivatetheMuzzles", RpcTarget.All);
-                //Guns[SelectedGun].GunEffect.SetActive(false);
-            }
-        }
-    }
 
 
 }
