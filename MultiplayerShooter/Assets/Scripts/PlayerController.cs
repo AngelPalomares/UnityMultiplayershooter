@@ -31,7 +31,6 @@ public class PlayerController : MonoBehaviourPunCallbacks
     public LayerMask GroundLayers;
 
     public GameObject Bulletimpact;
-    public Transform LocationToShoot;
 
     //public float TimeBetweeenShots = .1f;
     private float ShotCounter;
@@ -52,6 +51,12 @@ public class PlayerController : MonoBehaviourPunCallbacks
 
     public int Healthofplayer;
 
+    public Animator Anim;
+    public GameObject PlayerModel;
+
+    public Transform ModelGunPoint, GunHolder;
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -61,14 +66,24 @@ public class PlayerController : MonoBehaviourPunCallbacks
 
         Cam = Camera.main;
 
-        SwitchGun();
+        //SwitchGun();
+
+        photonView.RPC("Setgun", RpcTarget.All, SelectedGun);
 
         //Transform newtrans = SpawnManager.instance.GetSpawnPoint();
         //transform.position = newtrans.position;
         //transform.rotation = newtrans.rotation;
-        if (photonView.IsMine)
+
+        if(photonView.IsMine)
         {
+            PlayerModel.SetActive(false);
             UICanvasScript.instance.HealthImage.fillAmount = (float)Healthofplayer / 100f;
+        }
+        else
+        {
+            GunHolder.parent = ModelGunPoint;
+            GunHolder.localPosition = Vector3.zero;
+            GunHolder.localRotation = Quaternion.identity;
         }
     }
 
@@ -124,15 +139,20 @@ public class PlayerController : MonoBehaviourPunCallbacks
 
             ChangeGunWithnumbers();
 
+            /*
+
             if (Guns[SelectedGun].GunEffect.activeInHierarchy)
             {
                 MuzzleCounter -= Time.deltaTime;
                 if (MuzzleCounter <= 0)
                 {
-
-                    Guns[SelectedGun].GunEffect.SetActive(false);
+                    photonView.RPC("DeactivatetheMuzzles", RpcTarget.All);
+                    //Guns[SelectedGun].GunEffect.SetActive(false);
                 }
             }
+            */
+
+            photonView.RPC("DeactivateMuzzelTimer", RpcTarget.All);
 
 
             if (!OverHeated)
@@ -172,7 +192,8 @@ public class PlayerController : MonoBehaviourPunCallbacks
                 HeatCounter = 0;
             }
 
-
+            Anim.SetBool("gronded", isgrounded);
+            Anim.SetFloat("speed", MoveDirection.magnitude);
         }
     }
 
@@ -225,8 +246,10 @@ public class PlayerController : MonoBehaviourPunCallbacks
 
             }
 
-            Guns[SelectedGun].GunEffect.SetActive(true);
-            MuzzleCounter = MuzzleDisplayTime;
+            photonView.RPC("ActivatetheMuzzles", RpcTarget.All);
+
+            //Guns[SelectedGun].GunEffect.SetActive(true);
+            //MuzzleCounter = MuzzleDisplayTime;
         }
     }
 
@@ -252,7 +275,7 @@ public class PlayerController : MonoBehaviourPunCallbacks
                 SelectedGun = 0;
             }
 
-            SwitchGun();
+            photonView.RPC("Setgun", RpcTarget.All, SelectedGun);
 
         }
         else if (Input.GetAxisRaw("Mouse ScrollWheel") < 0f)
@@ -264,7 +287,7 @@ public class PlayerController : MonoBehaviourPunCallbacks
                 SelectedGun = Guns.Length - 1;
             }
 
-            SwitchGun();
+            photonView.RPC("Setgun", RpcTarget.All, SelectedGun);
         }
 
     }
@@ -274,17 +297,17 @@ public class PlayerController : MonoBehaviourPunCallbacks
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             SelectedGun = 0;
-            SwitchGun();
+            photonView.RPC("Setgun", RpcTarget.All, SelectedGun);
         }
         else if (Input.GetKeyDown(KeyCode.Alpha2))
         {
             SelectedGun = 1;
-            SwitchGun();
+            photonView.RPC("Setgun", RpcTarget.All, SelectedGun);
         }
         else if (Input.GetKeyDown(KeyCode.Alpha3))
         {
             SelectedGun = 2;
-            SwitchGun();
+            photonView.RPC("Setgun", RpcTarget.All, SelectedGun);
         }
     }
 
@@ -295,7 +318,8 @@ public class PlayerController : MonoBehaviourPunCallbacks
             gun.gameObject.SetActive(false);
         }
 
-        Guns[SelectedGun].GunEffect.SetActive(false);
+        photonView.RPC("DeactivatetheMuzzles", RpcTarget.All);
+        //Guns[SelectedGun].GunEffect.SetActive(false);
         Guns[SelectedGun].gameObject.SetActive(true);
     }
 
@@ -320,4 +344,45 @@ public class PlayerController : MonoBehaviourPunCallbacks
             PlayerSpawner.instance.Die(Damager);
         }
     }
+
+    //this swithces the gun
+    [PunRPC]
+    public void Setgun(int GunToSwitcht)
+    {
+        if(GunToSwitcht < Guns.Length)
+        {
+            SelectedGun = GunToSwitcht;
+            SwitchGun();
+        }
+
+    }
+
+    [PunRPC]
+    public void ActivatetheMuzzles()
+    {
+        Guns[SelectedGun].GunEffect.SetActive(true);
+        MuzzleCounter = MuzzleDisplayTime;
+    }
+
+    [PunRPC]
+    public void DeactivatetheMuzzles()
+    {
+        Guns[SelectedGun].GunEffect.SetActive(false);
+    }
+
+    [PunRPC]
+    public void DeactivateMuzzelTimer()
+    {
+        if (Guns[SelectedGun].GunEffect.activeInHierarchy)
+        {
+            MuzzleCounter -= Time.deltaTime;
+            if (MuzzleCounter <= 0)
+            {
+                photonView.RPC("DeactivatetheMuzzles", RpcTarget.All);
+                //Guns[SelectedGun].GunEffect.SetActive(false);
+            }
+        }
+    }
+
+
 }
