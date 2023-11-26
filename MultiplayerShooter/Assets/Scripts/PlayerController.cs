@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviourPunCallbacks
 {
     public Transform ViewPoint;
     public float MouseSensitivity = 1f;
@@ -47,9 +48,14 @@ public class PlayerController : MonoBehaviour
     public float MuzzleDisplayTime;
     private float MuzzleCounter;
 
+    public GameObject PlayerHitImpact;
+
+    public int Healthofplayer;
+
     // Start is called before the first frame update
     void Start()
     {
+        Healthofplayer = 100;
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
@@ -57,148 +63,171 @@ public class PlayerController : MonoBehaviour
 
         SwitchGun();
 
-        Transform newtrans = SpawnManager.instance.GetSpawnPoint();
-        transform.position = newtrans.position;
-        transform.rotation = newtrans.rotation;
+        //Transform newtrans = SpawnManager.instance.GetSpawnPoint();
+        //transform.position = newtrans.position;
+        //transform.rotation = newtrans.rotation;
+        if (photonView.IsMine)
+        {
+            UICanvasScript.instance.HealthImage.fillAmount = (float)Healthofplayer / 100f;
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        MouseInput = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
-
-        transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y + MouseInput.x,transform.rotation.eulerAngles.z);
-
-        VerticalRotation += MouseInput.y;
-        VerticalRotation = Mathf.Clamp(VerticalRotation, -60f, 60f);
-
-        ViewPoint.rotation = Quaternion.Euler(-VerticalRotation, ViewPoint.rotation.eulerAngles.y, ViewPoint.rotation.eulerAngles.z);
-
-        MoveDirection = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
-
-        if(Input.GetKey(Runningcode))
+        if (photonView.IsMine)
         {
-            activeMovespeed = RunSpeed;
-        }
-        else
-        {
-            activeMovespeed = MoveSpeed;
-        }
+            MouseInput = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
 
-        float Yvol = Movement.y;
+            transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y + MouseInput.x, transform.rotation.eulerAngles.z);
 
-        Movement = ((transform.forward * MoveDirection.z) + (transform.right * MoveDirection.x)).normalized * activeMovespeed;
-        Movement.y = Yvol;
+            VerticalRotation += MouseInput.y;
+            VerticalRotation = Mathf.Clamp(VerticalRotation, -60f, 60f);
 
-        if(Charcon.isGrounded)
-        {
-            Movement.y = 0f;
-        }
+            ViewPoint.rotation = Quaternion.Euler(-VerticalRotation, ViewPoint.rotation.eulerAngles.y, ViewPoint.rotation.eulerAngles.z);
 
-        isgrounded = Physics.Raycast(GroundCheckPoint.position, Vector3.down, .25f, GroundLayers);
+            MoveDirection = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
 
-        if(Input.GetButtonDown("Jump") && isgrounded)
-        {
-            Movement.y = JumpForce;
-        }
-
-        Movement.y += Physics.gravity.y * Time.deltaTime * gravitymod;
-
-        Charcon.Move(Movement * Time.deltaTime);
-
-        LockTheCursortothemiddle();
-
-        Changetheweapons();
-
-        ChangeGunWithnumbers();
-
-        if (Guns[SelectedGun].GunEffect.activeInHierarchy)
-        {
-            MuzzleCounter -= Time.deltaTime;
-            if (MuzzleCounter <= 0)
+            if (Input.GetKey(Runningcode))
             {
-
-                Guns[SelectedGun].GunEffect.SetActive(false);
+                activeMovespeed = RunSpeed;
             }
-        }
-
-
-        if (!OverHeated)
-        {
-            if (Input.GetMouseButtonDown(0))
+            else
             {
-                ShootingMechanic();
+                activeMovespeed = MoveSpeed;
+            }
+
+            float Yvol = Movement.y;
+
+            Movement = ((transform.forward * MoveDirection.z) + (transform.right * MoveDirection.x)).normalized * activeMovespeed;
+            Movement.y = Yvol;
+
+            if (Charcon.isGrounded)
+            {
+                Movement.y = 0f;
+            }
+
+            isgrounded = Physics.Raycast(GroundCheckPoint.position, Vector3.down, .25f, GroundLayers);
+
+            if (Input.GetButtonDown("Jump") && isgrounded)
+            {
+                Movement.y = JumpForce;
+            }
+
+            Movement.y += Physics.gravity.y * Time.deltaTime * gravitymod;
+
+            Charcon.Move(Movement * Time.deltaTime);
+
+            LockTheCursortothemiddle();
+
+            Changetheweapons();
+
+            ChangeGunWithnumbers();
+
+            if (Guns[SelectedGun].GunEffect.activeInHierarchy)
+            {
+                MuzzleCounter -= Time.deltaTime;
+                if (MuzzleCounter <= 0)
+                {
+
+                    Guns[SelectedGun].GunEffect.SetActive(false);
+                }
             }
 
 
-            if (Input.GetMouseButton(0) && Guns[SelectedGun].isAutomatic)
+            if (!OverHeated)
             {
-                ShotCounter -= Time.deltaTime;
-
-                if (ShotCounter <= 0)
+                if (Input.GetMouseButtonDown(0))
                 {
                     ShootingMechanic();
                 }
 
+
+                if (Input.GetMouseButton(0) && Guns[SelectedGun].isAutomatic)
+                {
+                    ShotCounter -= Time.deltaTime;
+
+                    if (ShotCounter <= 0)
+                    {
+                        ShootingMechanic();
+                    }
+
+                }
+                HeatCounter -= coolrate * Time.deltaTime;
+                UICanvasScript.instance.Overheatimage.fillAmount = (float)HeatCounter / (float)MaxHeat;
             }
-            HeatCounter -= coolrate * Time.deltaTime;
-            UICanvasScript.instance.Overheatimage.fillAmount = (float)HeatCounter / (float)MaxHeat;
-        }
-        else
-        {
-            HeatCounter -= overheatcoolrate * Time.deltaTime;
-            UICanvasScript.instance.Overheatimage.fillAmount = (float)HeatCounter / (float)MaxHeat;
-            if (HeatCounter <= 0)
+            else
             {
-                OverHeated = false;
-                UICanvasScript.instance.Overheat.text = " ";
+                HeatCounter -= overheatcoolrate * Time.deltaTime;
+                UICanvasScript.instance.Overheatimage.fillAmount = (float)HeatCounter / (float)MaxHeat;
+                if (HeatCounter <= 0)
+                {
+                    OverHeated = false;
+                    UICanvasScript.instance.Overheat.text = " ";
+                }
             }
+
+            if (HeatCounter < 0)
+            {
+                HeatCounter = 0;
+            }
+
+
         }
-
-        if(HeatCounter < 0)
-        {
-            HeatCounter = 0;
-        }
-
-
-
     }
 
     private void LateUpdate()
     {
-        Cam.transform.position = ViewPoint.position;
-        Cam.transform.rotation = ViewPoint.rotation;
+        if (photonView.IsMine)
+        {
+            Cam.transform.position = ViewPoint.position;
+            Cam.transform.rotation = ViewPoint.rotation;
+        }
     }
 
     public void ShootingMechanic()
     {
-        Ray ray = Cam.ViewportPointToRay(new Vector3(.5f, .5f, 0f));
-        ray.origin = Cam.transform.position;
-
-        if(Physics.Raycast(ray,out RaycastHit hit))
+        if (PhotonNetwork.IsConnected)
         {
-            GameObject BulletImpactObject = Instantiate(Bulletimpact, hit.point + (hit.normal) * 0.002f, Quaternion.LookRotation(hit.normal, Vector3.up));
+            Ray ray = Cam.ViewportPointToRay(new Vector3(.5f, .5f, 0f));
+            ray.origin = Cam.transform.position;
 
-            Destroy(BulletImpactObject, 5f); ;
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                if(hit.collider.gameObject.tag == "Player")
+                {
+                    Debug.Log("Hit " + hit.collider.gameObject.GetPhotonView().Owner.NickName);
+                    PhotonNetwork.Instantiate(PlayerHitImpact.name, hit.point, Quaternion.identity);
+
+                    hit.collider.gameObject.GetPhotonView().RPC("DealDamage", RpcTarget.All, photonView.Owner.NickName, Guns[SelectedGun].playerDamage);
+
+                }
+                else
+                {
+                    GameObject BulletImpactObject = Instantiate(Bulletimpact, hit.point + (hit.normal) * 0.002f, Quaternion.LookRotation(hit.normal, Vector3.up));
+
+                    Destroy(BulletImpactObject, 5f); ;
+                }
+            }
+
+            ShotCounter = Guns[SelectedGun].timeBetweenShots;
+
+            HeatCounter += Guns[SelectedGun].heatpershot;
+
+            UICanvasScript.instance.Overheatimage.fillAmount = (float)HeatCounter / (float)MaxHeat;
+
+            if (HeatCounter >= MaxHeat)
+            {
+                HeatCounter = MaxHeat;
+
+                OverHeated = true;
+                UICanvasScript.instance.Overheat.text = "Weapon Overheated";
+
+            }
+
+            Guns[SelectedGun].GunEffect.SetActive(true);
+            MuzzleCounter = MuzzleDisplayTime;
         }
-
-        ShotCounter = Guns[SelectedGun].timeBetweenShots;
-
-        HeatCounter += Guns[SelectedGun].heatpershot;
-
-        UICanvasScript.instance.Overheatimage.fillAmount = (float)HeatCounter / (float)MaxHeat;
-
-        if (HeatCounter >= MaxHeat)
-        {
-            HeatCounter = MaxHeat;
-
-            OverHeated = true;
-            UICanvasScript.instance.Overheat.text = "Weapon Overheated";
-
-        }
-
-        Guns[SelectedGun].GunEffect.SetActive(true);
-        MuzzleCounter = MuzzleDisplayTime;
     }
 
     public void LockTheCursortothemiddle()
@@ -270,4 +299,25 @@ public class PlayerController : MonoBehaviour
         Guns[SelectedGun].gameObject.SetActive(true);
     }
 
+    //is a way to call this function and run it on the network;
+    [PunRPC]
+    public void DealDamage(string Damager, int DamageAmount)
+    {
+        TakeDamage(Damager,DamageAmount);
+    }
+
+    public void TakeDamage(string Damager, int DamageAmount)
+    {
+        Healthofplayer -= DamageAmount;
+        if(photonView.IsMine)
+        {
+            UICanvasScript.instance.HealthImage.fillAmount = (float)Healthofplayer / 100f;
+        }
+        Debug.Log(photonView.Owner.NickName + " has been hit by " + Damager);
+
+        if(photonView.IsMine && Healthofplayer <= 0)
+        {
+            PlayerSpawner.instance.Die(Damager);
+        }
+    }
 }

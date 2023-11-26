@@ -7,6 +7,7 @@ public class SpawnManager : MonoBehaviour
     public static SpawnManager instance;
     public Transform[] SpawnPoints;
 
+
     private void Awake()
     {
         instance = this;

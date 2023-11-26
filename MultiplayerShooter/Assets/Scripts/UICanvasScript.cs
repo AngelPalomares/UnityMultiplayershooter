@@ -10,6 +10,11 @@ public class UICanvasScript : MonoBehaviour
     public TMP_Text Overheat;
     public Image Overheatimage;
 
+    public Image HealthImage;
+
+    public GameObject DeathScreen;
+    public TMP_Text DeathText;
+
     private void Awake()
     {
         instance = this;
