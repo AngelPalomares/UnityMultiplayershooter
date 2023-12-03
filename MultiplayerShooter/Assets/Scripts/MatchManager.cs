@@ -108,7 +108,9 @@ public class MatchManager : MonoBehaviourPunCallbacks, IOnEventCallback
     }
 
     public void NewPlayerReceived(object[] dataReceived) {
+        PlayerInfo player = new PlayerInfo((string)dataReceived[0], (int)dataReceived[1], (int)dataReceived[2], (int)dataReceived[3]);
 
+        AllPlayers.Add(player);
     }
 
     public void ListPlayersSend()
